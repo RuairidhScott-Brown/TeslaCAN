@@ -1,0 +1,8 @@
+python-can~=4.4
+cantools~=39.4
+pandas~=2.2
+uptime~=3.0
+
+[test]
+pytest~=8.3
+ruff~=0.6

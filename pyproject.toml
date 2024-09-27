@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "teslaCAN"
+version = "0.1.0"
+description = "A project for CAN bus communication to test Tesla vehicles."
+authors = [
+    { name = "Ruairidh Scott-Brown" }
+]
+dependencies = [
+    "python-can~=4.4",
+    "cantools~=39.4",
+    "pandas~=2.2", 
+    "uptime~=3.0",
+    "msgpack~=1.1"
+]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+test = [
+    "pytest~=8.3",
+    "ruff~=0.6"
+]
+
+[tool.ruff]
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".gitignore",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "vene-dev",
+    "data",
+]
+
+line-length = 160
+indent-width = 4
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "W", "I", "N", "D", "ANN"]
+ignore = ["D100", "D203", "D213", "D413", "ANN101"]
+fixable = ["ALL"]

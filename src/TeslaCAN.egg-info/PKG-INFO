@@ -1,0 +1,13 @@
+Metadata-Version: 2.1
+Name: teslaCAN
+Version: 0.1.0
+Summary: A project for CAN bus communication to test Tesla vehicles.
+Author: Ruairidh Scott-Brown
+Requires-Python: >=3.10
+Requires-Dist: python-can~=4.4
+Requires-Dist: cantools~=39.4
+Requires-Dist: pandas~=2.2
+Requires-Dist: uptime~=3.0
+Provides-Extra: test
+Requires-Dist: pytest~=8.3; extra == "test"
+Requires-Dist: ruff~=0.6; extra == "test"
