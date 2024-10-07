@@ -2,3 +2,6 @@
 venv
 venv-dev
 240415_1538_Alpha_CANTesting_Drive1.csv
+.egg-info
+__pycache__
+teslaCAN.egg-info
