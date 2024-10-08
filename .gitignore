@@ -3,5 +3,8 @@ venv
 venv-dev
 240415_1538_Alpha_CANTesting_Drive1.csv
 .egg-info
-__pycache__
+tests/__pycache__
+src/tesla_can/__pycache__
 teslaCAN.egg-info
+.pytest_cache
+.vscode

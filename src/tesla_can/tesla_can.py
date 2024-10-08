@@ -4,11 +4,14 @@ import multiprocessing as mp
 from pathlib import Path
 from time import sleep
 from typing import Any, Optional
+from queue import Queue
 
 # 3rd party imports.
 import can
 import cantools
 import pandas as pd
+import os
+import sys
 
 
 def read_in_excel(path: str | Path) -> pd.DataFrame:
@@ -25,7 +28,7 @@ def read_in_csv(path: str | Path) -> pd.DataFrame:
 
 def load_dbc_file(dbc_path: Path | str) -> cantools.db.Database | None:
     try:
-        db = cantools.database.load_file(db_path)
+        db = cantools.database.load_file(dbc_path)
     except FileNotFoundError:
         print(f"File not found: {dbc_path}")
         return None
@@ -57,7 +60,6 @@ class TeslaCANProcess(mp.Process):
 
 
     def __filter_can_message(self, message: can.Message) -> bool:
-        data = list(message.data)
         can_id = message.arbitration_id
         if can_id in self.__filtered_messages:
             return True
@@ -95,14 +97,14 @@ class TeslaCANProcess(mp.Process):
 
         if self.__output_queue and not self.__output_queue.empty():
             output_message = self.__output_get(wait=False)
-            print(self.__channel, "SEND", output_message)
+            # print(self.__channel, "SEND", output_message)
             bus.send(output_message)
 
         if input_message is None:
             return False
 
         # decoded_message = self.__db.decode_message(input_message.arbitration_id, input_message.data)
-        # print(input_message)
+        # print(self.__channel, "RECV", input_message)
 
         if self.__filter_can_message(input_message):
             return False
@@ -141,22 +143,64 @@ class TeslaCANProcess(mp.Process):
         else:
             return self.__output_queue.get(wait)
 
+    def __empty_inptut_queue(self) -> None:
+        if self.__input_queue is not None:
+            while not self.__input_queue.empty():
+                self.__input_queue.get()
+        else:
+            return None
 
-# if __name__ == "__main__":
-#     input_queue = Queue()
-#     output_queue = Queue()
+    def __empty_output_queue(self) -> None:
+        if self.__output_queue is not None:
+            while not self.__output_queue.empty():
+                self.__output_queue.get()
+        else:
+            return None
 
-#     db_path = Path(os.path.abspath(__file__)).parent.parent / "data" / "tesla.dbc"
-#     messages_path = Path(os.path.abspath(__file__)).parent.parent / "data" / "messages.csv"
 
-#     db = cantools.database.load_file(db_path)
-#     messages_to_be_filtered = read_in_csv(messages_path)["Fruit"].to_list()
+    def empty(self) -> None:
+        self.__empty_inptut_queue()
+        self.__empty_output_queue()
 
-#     process_1 = TeslaCANProcess("virtual", "test", db, input_queue, output_queue, messages_to_be_filtered)
-#     process_1.start()
-#     sleep(10)
-#     print("Here")
-#     process_1.stop()
-#     process_1.join()
-#     print("Finished")
+
+
+if __name__ == "__main__":
+    input_queue = mp.Queue()
+    output_queue = mp.Queue()
+
+    db_path = Path(os.path.abspath(__file__)).parent.parent.parent / "data" / "tesla.dbc"
+    messages_path = Path(os.path.abspath(__file__)).parent.parent.parent / "data" / "messages.csv"
+
+    db = cantools.database.load_file(db_path)
+    messages_to_be_filtered = read_in_csv(messages_path)["IDs"].to_list()
+
+    process_1 = TeslaCANProcess("pcan", "PCAN_USBBUS2", db, input_queue, output_queue, messages_to_be_filtered)
+    # process_2 = TeslaCANProcess("pcan", "PCAN_USBBUS1", db, output_queue, input_queue, messages_to_be_filtered)
+
+    try:
+        process_1.start()
+        # process_2.start()
+
+        print("Start")
+        sleep(12)
+        process_1.stop()
+        # process_2.stop()
+
+        # process_2.empty()
+        process_1.empty()
+        sleep(2)
+        process_1.join()
+        # process_2.join()
+
+    except KeyboardInterrupt:
+        print("*"*50)
+        process_1.stop()
+        # process_2.stop()
+
+        # process_2.empty()
+        process_1.empty()
+
+        process_1.join()
+        # process_2.join()
+    print("Finished")
 

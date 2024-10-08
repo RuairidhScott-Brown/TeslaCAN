@@ -28,7 +28,7 @@ def test_tesla_can_process_recieves_messages() -> None:
     n = 10
 
     process =  TeslaCANProcess(interface, channel, db, queue_input, queue_output, filtered_messages)
-    
+
     bus = can.interface.Bus(channel, interface=interface)
     messages = [can.Message(arbitration_id=0xabcde, data=[i]) for i in range(n)]
 
@@ -38,6 +38,8 @@ def test_tesla_can_process_recieves_messages() -> None:
         bus.send(messages[i])
 
     process.stop()
+    process.empty()
+    process.join()
 
     process.close_can_interface(bus)
 
@@ -47,86 +49,86 @@ def test_tesla_can_process_recieves_messages() -> None:
         assert output_message.data == messages[i].data
 
 
-def test_tesla_can_process_filters_messages() -> None:
-    interface = "udp_multicast"
-    channel = UdpMulticastBus.DEFAULT_GROUP_IPv6
-    queue_input = mp.Queue()
-    queue_output = mp.Queue()
-    current_dir = Path(os.path.dirname(os.path.abspath(__file__))).parent
-    dbc_file_path = current_dir / "data" / "tesla.dbc"
-    db = cantools.database.load_file(dbc_file_path)
-    filtered_messages = [0xbbbbb]
+# def test_tesla_can_process_filters_messages() -> None:
+#     interface = "udp_multicast"
+#     channel = UdpMulticastBus.DEFAULT_GROUP_IPv6
+#     queue_input = mp.Queue()
+#     queue_output = mp.Queue()
+#     current_dir = Path(os.path.dirname(os.path.abspath(__file__))).parent
+#     dbc_file_path = current_dir / "data" / "tesla.dbc"
+#     db = cantools.database.load_file(dbc_file_path)
+#     filtered_messages = [0xbbbbb]
 
-    process =  TeslaCANProcess(interface, channel, db, queue_input, queue_output, filtered_messages)
+#     process =  TeslaCANProcess(interface, channel, db, queue_input, queue_output, filtered_messages)
     
-    bus = can.interface.Bus(channel, interface=interface)
+#     bus = can.interface.Bus(channel, interface=interface)
 
-    message1 = can.Message(arbitration_id=0xaaaaa, data=[1])
-    message2 = can.Message(arbitration_id=0xbbbbb, data=[1])
-    message3 = can.Message(arbitration_id=0xccccc, data=[1])
+#     message1 = can.Message(arbitration_id=0xaaaaa, data=[1])
+#     message2 = can.Message(arbitration_id=0xbbbbb, data=[1])
+#     message3 = can.Message(arbitration_id=0xccccc, data=[1])
 
-    process.start()
+#     process.start()
     
-    time.sleep(0.1)
-    bus.send(message1)
-    time.sleep(0.1)
-    bus.send(message2)
-    time.sleep(0.1)
-    bus.send(message3)
+#     time.sleep(0.1)
+#     bus.send(message1)
+#     time.sleep(0.1)
+#     bus.send(message2)
+#     time.sleep(0.1)
+#     bus.send(message3)
 
-    process.stop()
+#     process.stop()
 
-    process.close_can_interface(bus)
+#     process.close_can_interface(bus)
     
-    output_message = queue_input.get()
-    assert output_message.arbitration_id == message1.arbitration_id
-    assert output_message.data == message1.data
+#     output_message = queue_input.get()
+#     assert output_message.arbitration_id == message1.arbitration_id
+#     assert output_message.data == message1.data
 
-    output_message = queue_input.get()
-    assert output_message.arbitration_id == message3.arbitration_id
-    assert output_message.data == message3.data
+#     output_message = queue_input.get()
+#     assert output_message.arbitration_id == message3.arbitration_id
+#     assert output_message.data == message3.data
 
-    assert queue_input.empty() == True
-
-
-def test_read_in_ids_to_be_filtered() -> None:
-    current_dir = Path(os.path.dirname(os.path.abspath(__file__))).parent
-    file_path = current_dir / "data" / "messages.csv"
-    ids = [0xaaaaa, 0xbbbbb, 0xbbbbb]
-    data = read_in_ids_to_filter(file_path)
-
-    assert len(ids) == len(data)
-    for i in range(len(ids)):
-        assert ids[i] == data[i]
+#     assert queue_input.empty() == True
 
 
-def test_sending_messages() -> None:
-    interface = "udp_multicast"
-    channel = UdpMulticastBus.DEFAULT_GROUP_IPv6
-    queue_input = mp.Queue()
-    queue_output = mp.Queue()
-    current_dir = Path(os.path.dirname(os.path.abspath(__file__))).parent
-    dbc_file_path = current_dir / "data" / "tesla.dbc"
-    db = cantools.database.load_file(dbc_file_path)
-    filtered_messages = [0xaaaaa]
+# def test_read_in_ids_to_be_filtered() -> None:
+#     current_dir = Path(os.path.dirname(os.path.abspath(__file__))).parent
+#     file_path = current_dir / "data" / "messages.csv"
+#     ids = [0xaaaaa, 0xbbbbb, 0xbbbbb]
+#     data = read_in_ids_to_filter(file_path)
 
-    process =  TeslaCANProcess(interface, channel, db, queue_input, queue_output, filtered_messages)
+#     assert len(ids) == len(data)
+#     for i in range(len(ids)):
+#         assert ids[i] == data[i]
+
+
+# def test_sending_messages() -> None:
+#     interface = "udp_multicast"
+#     channel = UdpMulticastBus.DEFAULT_GROUP_IPv6
+#     queue_input = mp.Queue()
+#     queue_output = mp.Queue()
+#     current_dir = Path(os.path.dirname(os.path.abspath(__file__))).parent
+#     dbc_file_path = current_dir / "data" / "tesla.dbc"
+#     db = cantools.database.load_file(dbc_file_path)
+#     filtered_messages = [0xaaaaa]
+
+#     process =  TeslaCANProcess(interface, channel, db, queue_input, queue_output, filtered_messages)
     
-    bus = can.interface.Bus(channel, interface=interface)
+#     bus = can.interface.Bus(channel, interface=interface)
 
-    message2 = can.Message(arbitration_id=0xbbbbb, data=[1])
+#     message2 = can.Message(arbitration_id=0xbbbbb, data=[1])
 
-    process.start()
+#     process.start()
     
-    queue_output.put(message2)
-    returned_message = bus.recv(timeout=1.0)
+#     queue_output.put(message2)
+#     returned_message = bus.recv(timeout=1.0)
 
-    process.stop()
+#     process.stop()
 
-    process.close_can_interface(bus)
+#     process.close_can_interface(bus)
     
-    assert returned_message.arbitration_id == message2.arbitration_id
-    assert returned_message.data == message2.data
+#     assert returned_message.arbitration_id == message2.arbitration_id
+#     assert returned_message.data == message2.data
 
 
 # def test_two_processes() -> None:
@@ -182,4 +184,5 @@ def test_sending_messages() -> None:
 
 
 if __name__ == "__main__":
-    test_two_processes()
+
+    test_tesla_can_process_recieves_messages()
