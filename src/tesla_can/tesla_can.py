@@ -48,6 +48,7 @@ class TeslaCANProcess(mp.Process):
         input_queue: Optional[mp.Queue] = None, 
         output_queue: Optional[mp.Queue] = None, 
         filtered_messages: list = list(),
+        log: bool = False
     ):
         super().__init__()
         self.__channel = channel
@@ -57,6 +58,7 @@ class TeslaCANProcess(mp.Process):
         self.__output_queue = output_queue
         self.__filtered_messages = filtered_messages
         self.__stop_event = mp.Event()
+        self.__log = log
 
 
     def __filter_can_message(self, message: can.Message) -> bool:
@@ -92,19 +94,22 @@ class TeslaCANProcess(mp.Process):
                 continue
 
     def process_can_message(self, bus: can.BusABC) -> bool:
-        input_message = bus.recv(timeout=0.1)
-        print(self.__channel, "RECV", input_message)
 
         if self.__output_queue and not self.__output_queue.empty():
             output_message = self.__output_get(wait=False)
-            # print(self.__channel, "SEND", output_message)
-            bus.send(output_message)
+            output_message.is_rx = False
+            if self.__log:
+                print(self.__channel, "SEND", output_message)
+            # bus.send(output_message)
+        input_message = bus.recv()
+        # print(self.__channel, "RECV", input_message)
 
         if input_message is None:
             return False
 
         # decoded_message = self.__db.decode_message(input_message.arbitration_id, input_message.data)
-        # print(self.__channel, "RECV", input_message)
+        if self.__log:
+            print(self.__channel, "RECV", input_message)
 
         if self.__filter_can_message(input_message):
             return False
@@ -174,33 +179,42 @@ if __name__ == "__main__":
     db = cantools.database.load_file(db_path)
     messages_to_be_filtered = read_in_csv(messages_path)["IDs"].to_list()
 
-    process_1 = TeslaCANProcess("pcan", "PCAN_USBBUS2", db, input_queue, output_queue, messages_to_be_filtered)
-    # process_2 = TeslaCANProcess("pcan", "PCAN_USBBUS1", db, output_queue, input_queue, messages_to_be_filtered)
+    process_1 = TeslaCANProcess("pcan", "PCAN_USBBUS2", db, input_queue, output_queue, messages_to_be_filtered, False)
+    process_2 = TeslaCANProcess("pcan", "PCAN_USBBUS1", db, output_queue, input_queue, messages_to_be_filtered, True)
 
     try:
-        process_1.start()
-        # process_2.start()
-
         print("Start")
-        sleep(12)
-        process_1.stop()
+        process_1.start()
+        process_2.start()
+
+        print("Running...")
+        while True:
+            sleep(1)
+
+        # process_1.stop()
         # process_2.stop()
 
         # process_2.empty()
-        process_1.empty()
-        sleep(2)
-        process_1.join()
-        # process_2.join()
+        # process_1.empty()
+
+        # process_1.terminate()
+        # process_2.terminate()
 
     except KeyboardInterrupt:
-        print("*"*50)
+        print("Stop")
         process_1.stop()
-        # process_2.stop()
+        process_2.stop()
 
-        # process_2.empty()
+        print("Empty")
         process_1.empty()
+        process_2.empty()
 
-        process_1.join()
-        # process_2.join()
+        print("Join")
+        process_1.join(timeout=1)
+        process_2.join(timeout=1)
+
+        print("Terminate")
+        process_1.terminate()
+        process_2.terminate()
     print("Finished")
 
